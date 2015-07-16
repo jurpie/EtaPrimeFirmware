@@ -3,12 +3,12 @@
 #include "Adafruit_LEDBackpack.h"
 #include "Adafruit_GFX.h"
 
-int devAddr [] = { 0x5A<<1, 0x1B<<1 }; 
+int devAddr [] = { 0x01<<1, 0x02<<1, 0x03<<1, 0x04<<1 }; 
 int index = 0;
-int numSensors = 2;  // Number of sensors
+int numSensors = 4;  // Number of sensors
 int dev = devAddr[index];
 int ledAddr = 0x70;
-int maxTemp = 40;
+int maxTemp = 30;
 int minTemp = 20;
 
 Adafruit_BicolorMatrix matrix = Adafruit_BicolorMatrix();
@@ -30,9 +30,10 @@ void setup(){
 }
 
 void loop(){
+  
     Serial.println();
     Serial.print("Device Address: ");
-    Serial.println(dev);
+    Serial.println(dev>>1);
     
     int data_low = 0;
     int data_high = 0;
@@ -73,8 +74,6 @@ void loop(){
 
     delay(100); // wait a second before printing again
     
-    dev = devAddr[index];
-    
     if (index == numSensors - 1)
     {
        index = 0;
@@ -83,6 +82,8 @@ void loop(){
     {
        index++; 
     }  
+    
+     dev = devAddr[index];
     //dev = (index == numSensors - 1)? devAddr[index = 0] : devAddr[index++];
 }
 
@@ -90,16 +91,20 @@ void tempDisplay(int temp, int col)
 {
     // Figure out how tall the column should be
     int height = (temp - minTemp)/((maxTemp - minTemp)/8);
+    Serial.print("Height: ");
+    Serial.println(height);
     col *= 2 ;
-  
+    
     // Temperature Test
     matrix.fillRect(col, 0, 2, 3, LED_RED);    // Upper section
     matrix.fillRect(col, 2, 2, 3, LED_YELLOW); // Mid
     matrix.fillRect(col, 5, 2, 2, LED_GREEN);  // Lower section
 
-    matrix.drawLine(col, 0, col, 7 - height, LED_OFF);
-    matrix.drawLine(col+1, 0, col+1, 7 - height, LED_OFF);
-
+    if (height < 7)
+    {
+       matrix.drawLine(col, 0, col, 7 - height, LED_OFF);
+       matrix.drawLine(col+1, 0, col+1, 7 - height, LED_OFF);
+    }
     matrix.writeDisplay();
     
 }
