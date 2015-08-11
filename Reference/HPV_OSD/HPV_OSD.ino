@@ -44,8 +44,8 @@
 #undef PROGMEM 
 #define PROGMEM __attribute__(( section(".progmem.data") )) 
 
-#undef PSTR 
-#define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];})) 
+//#undef PSTR 
+//#define PSTR(s) (__extension__({static const char __c[] PROGMEM = (s); &__c[0];})) 
 
 /* *************************************************/
 /* ***************** DEFINITIONS *******************/
