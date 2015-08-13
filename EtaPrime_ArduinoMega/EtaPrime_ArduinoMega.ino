@@ -6,11 +6,17 @@
 #include <Wire.h>
 #include "Adafruit_LEDBackpack.h"
 #include "Adafruit_GFX.h"
+#include <Adafruit_GPS.h>
+#include <SoftwareSerial.h>
 
 #define RXOSD 14
 #define TXOSD 15
+
 #define RXGPS 16
 #define TXGPS 17
+// Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
+// Set to 'true' if you want to debug and listen to the raw GPS sentences. 
+#define GPSECHO  false
 
 #define SDA 20
 #define SCL 21
@@ -30,11 +36,26 @@
 #define SCK 52
 #define SS 53
 
+
+
+
 // *****************************************************************************
 // OSD
 // *****************************************************************************
 
 char slipBuffer[N_SLIP]; //SLIP.h
+
+// *****************************************************************************
+// GPS
+// *****************************************************************************
+HardwareSerial mySerial = Serial2;
+Adafruit_GPS GPS(&mySerial);
+
+// this keeps track of whether we're using the interrupt
+// off by default!
+boolean usingInterrupt = false;
+void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
+
 
 // *****************************************************************************
 // TEMPERATURE SENSORS
@@ -58,7 +79,9 @@ Adafruit_BicolorMatrix matrix = Adafruit_BicolorMatrix();
 // COUNTER
 // *****************************************************************************
 
-
+// *****************************************************************************
+// SD CARD
+// *****************************************************************************
 
 
 void setup() {
@@ -75,7 +98,18 @@ void setup() {
 // GPS SETUP
 // *****************************************************************************
 
-	Serial2.begin(9600); // GPS
+	// uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
+	GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+
+	// Set the update rate
+	GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
+	// For the parsing code to work nicely and have time to sort thru the data, and
+	// print it out we don't suggest using anything higher than 1 Hz
+
+	// the nice thing about this code is you can have a timer0 interrupt go off
+	// every 1 millisecond, and read data from the GPS for you. that makes the
+	// loop code a heck of a lot easier!
+	useInterrupt(true);
 
 // *****************************************************************************
 // TEMPERATURE SENSOR SETUP
@@ -126,12 +160,94 @@ void setup() {
  
 }
 
+
+void useInterrupt(boolean v) {
+  if (v) {
+    // Timer0 is already used for millis() - we'll just interrupt somewhere
+    // in the middle and call the "Compare A" function above
+    OCR0A = 0xAF;
+    TIMSK0 |= _BV(OCIE0A);
+    usingInterrupt = true;
+  } else {
+    // do not call the interrupt function COMPA anymore
+    TIMSK0 &= ~_BV(OCIE0A);
+    usingInterrupt = false;
+  }
+}
+
+// Interrupt is called once a millisecond, looks for any new GPS data, and stores it
+SIGNAL(TIMER0_COMPA_vect) {
+  char c = GPS.read();
+  // if you want to debug, this is a good time to do it!
+  if (GPSECHO)
+    if (c) UDR0 = c;  
+    // writing direct to UDR0 is much much faster than Serial.print 
+    // but only one character can be written at a time. 
+}
+
+
 void loop() {
 
 // *****************************************************************************
 // GPS
 // *****************************************************************************
+	// if a sentence is received, we can check the checksum, parse it...
+	if (GPS.newNMEAreceived()) {
+		// a tricky thing here is if we print the NMEA sentence, or data
+		// we end up not listening and catching other sentences! 
+		// so be very wary if using OUTPUT_ALLDATA and trying to print out data
+		//Serial.println(GPS.lastNMEA());   // this also sets the newNMEAreceived() flag to false
+	  
+		if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
+		  return;  // we can fail to parse a sentence in which case we should just wait for another
+	}
+	
+	if (GPS.fix){
+		*((uint8_t*)slipBuffer + 0) = ID_GPSCOMM;
+		*((uint8_t*)(slipBuffer + 1 + 0)) = 1; // Received from GPS
+		*((uint8_t*)slipBuffer + 1 + 1) = 0;
+		SlipPacketSend(2, (char*)slipBuffer, &Serial3);
+		
+		// Track the moving average
+		const int numTerms = 3; // Moving average of this many values
+		static int32_t latitude[numTerms];
+		static int32_t longitude[numTerms];
+		static int32_t altitude[numTerms];
+		static int index = 0;
 
+		if (startSet == 0) {
+		GPS_setStart();
+		Serial.println(startSet);
+		Serial.println("GPS start set!");
+
+		// Prepare the moving average arrays
+		for (int x = 0; x < numTerms; x++) {
+			latitude[x] = GPS.Lattitude;
+			longitude[x] = GPS.Longitude;
+			altitude[x] = GPS.Altitude;
+			}
+		}
+		if (index == numTerms) index = 0;
+
+		latitude[index] = GPS.Lattitude;
+		longitude[index] = GPS.Longitude;
+		altitude[index++] = GPS.Altitude;
+
+		lat = average(latitude, numTerms);
+		lon = average(longitude, numTerms);
+		alt = average(altitude, numTerms);
+
+		displacement = GPS_getDistance(LattitudeFinish, LongitudeFinish, AltitudeFinish, lat, lon, alt);
+		uint32_t currDistance = GPS_getDistance(LattitudePrev, LongitudePrev, AltitudePrev, lat, lon, alt);
+
+		if (currDistance >= 0) {
+			GPS_totalDistance += currDistance;
+
+			LattitudePrev = lat;
+			LongitudePrev = lon;
+			AltitudePrev = alt;
+		}
+	}
 // *****************************************************************************
 // TEMPERATURE SENSOR
 // *****************************************************************************
