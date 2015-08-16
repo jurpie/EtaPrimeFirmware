@@ -27,19 +27,22 @@ void setupGPS(){
 // *****************************************************************************
 // GPS SETUP
 // *****************************************************************************
-
-	// uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
-	GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-
-	// Set the update rate
-	GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
-	// For the parsing code to work nicely and have time to sort thru the data, and
-	// print it out we don't suggest using anything higher than 1 Hz
-
-	// the nice thing about this code is you can have a timer0 interrupt go off
-	// every 1 millisecond, and read data from the GPS for you. that makes the
-	// loop code a heck of a lot easier!
-	useInterrupt(true);
+        Serial.println("Setting up GPS...");
+        // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
+        GPS.begin(9600);
+        
+        // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
+        GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+        
+        // Set the update rate
+        GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
+        // For the parsing code to work nicely and have time to sort thru the data, and
+        // print it out we don't suggest using anything higher than 1 Hz
+        
+        // the nice thing about this code is you can have a timer0 interrupt go off
+        // every 1 millisecond, and read data from the GPS for you. that makes the
+        // loop code a heck of a lot easier!
+        useInterrupt(true);
 }
 
 void useInterrupt(boolean v) {
@@ -70,6 +73,7 @@ void loopGPS(){
 // *****************************************************************************
 // GPS LOOP
 // *****************************************************************************
+        Serial.println("Inside GPS loop");
 	// if a sentence is received, we can check the checksum, parse it...
 	if (GPS.newNMEAreceived()) {
 		// a tricky thing here is if we print the NMEA sentence, or data
@@ -102,15 +106,12 @@ void loopGPS(){
 		Serial.println(startSet);
 		Serial.println("GPS start set!");
 
-		// Prepare the moving average arrays
-		for (int x = 0; x < numTerms; x++) {
-			latitude[x] = GPS.latitude;
-			longitude[x] = GPS.longitude;
-			altitude[x] = GPS.altitude;
-			}
+		lat = GPS.latitude;
+		lon = GPS.longitude;
+		alt = GPS.altitude;
 		
 		// Calculate speed
-		speed = GPS.speed * 1.852
+		speed = GPS.speed * 1.852;
 		// Send Speed through SLIP
 		
 		*((uint8_t*)slipBuffer + 0) = ID_SPEED;
@@ -118,6 +119,7 @@ void loopGPS(){
 		*((uint8_t*)slipBuffer + 1 + 4) = 0;
 		SlipPacketSend(6, (char*)slipBuffer, &Serial3);
 		}
+
 		
 		//Send Distance through SLIP
 		displacement = GPS_getDistance(LattitudeStart, LongitudeStart, AltitudeStart, lat, lon, alt);
@@ -130,25 +132,27 @@ void loopGPS(){
 		LongitudePrev = lon;
 		AltitudePrev = alt;
 		}
-
-		*((uint8_t*)slipBuffer + 0) = ID_DISTANCE;
-		if (simulation_mode) {
-		*((uint32_t*)(slipBuffer + 1 + 0)) = distance * 1000;
-		} else {
+                
+                Serial.print("GPS Data: ");
+                Serial.print("Longitude - ");
+                Serial.print(lon);
+                Serial.print(" Latitude - ");
+                Serial.print(lat);
+                Serial.print(" Altitude - ");
+                Serial.println(alt);
+                
+                *((uint8_t*)slipBuffer + 0) = ID_DISTANCE;
 		*((uint32_t*)(slipBuffer + 1 + 0)) = GPS_totalDistance;
-		}
 		*((uint8_t*)slipBuffer + 1 + 4) = 0;
 		SlipPacketSend(6, (char*)slipBuffer, &Serial3);
 		
 		//Send Displacement through SLIP
 		*((uint8_t*)slipBuffer + 0) = ID_DISPLACEMENT;
-		if (simulation_mode) {
-		*((int32_t*)(slipBuffer + 1 + 0)) = (COURSE_LENGTH - distance) * 1000; // Assume same as distance
-		} else {
 		*((int32_t*)(slipBuffer + 1 + 0)) = displacement;
-		}
 		*((uint8_t*)slipBuffer + 1 + 4) = 0;
 		SlipPacketSend(6, (char*)slipBuffer, &Serial3);
+
+                
 	}
 }
 

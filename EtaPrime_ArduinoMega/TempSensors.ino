@@ -10,6 +10,8 @@ const int buffSize = sampleSize*2 - 1;
 const int numSensors = 4;  // Number of sensors
 
 
+int index = 0;
+int dev = devAddr[index];
 int ledAddr = 0x70;
 int maxTemp = 40;
 int minTemp = 20;
@@ -17,10 +19,9 @@ int minTemp = 20;
 Adafruit_BicolorMatrix matrix = Adafruit_BicolorMatrix();
 
 void setupTempSensors(){
-// *****************************************************************************
-// TEMPERATURE SENSOR SETUP
-// *****************************************************************************
-
+   Serial.begin(9600);
+   Serial.println("Setup...");   
+        
    i2c_init(); //Initialise the i2c bus
    PORTC = (1 << PORTC4) | (1 << PORTC5);//enable pullups
 
@@ -34,57 +35,81 @@ void setupTempSensors(){
 }
 
 void loopTempSensors(){
-	
-// *****************************************************************************
-// TEMPERATURE SENSOR LOOP
-// *****************************************************************************
-	int sensorIndex = 0;
+    
+    //Serial.println();
+    //Serial.print("Device Address: ");
+    //Serial.println(dev>>1);
     int maxSensorRead;   // max temp among all sample reads for a particular sensor at a time
     int tempBuff[buffSize] = {0};
     double tempData[sampleSize-1] = {0x0000}; // where samples are temporary stored
     int pec = 0;
 
-    while (sensorIndex < numSensors){    
-		int dev = devAddr[sensorIndex];
-		for(int i = 0; i < sampleSize; i++)
-		{
-		  i2c_start_wait(dev+I2C_WRITE);
-		  i2c_write(0x07);
-		  
-		  // read
-		  i2c_rep_start(dev+I2C_READ);
-		  tempBuff[i*2] = i2c_readAck(); //Read 1 byte and then send ack, data_low
-		  tempBuff[i*2+1] = i2c_readAck(); //Read 1 byte and then send ack, data_high
-		  pec = i2c_readNak();
-		  i2c_stop();
-		}        
-			
-		//This converts high and low bytes together and processes temperature, MSB is a error bit and is ignored for temps
-		double tempFactor = 0.02; // 0.02 degrees per LSB (measurement resolution of the MLX90614)
-		int frac; // data past the decimal point
-		
-		for(int i = 0; i < sampleSize; i++)
-		{
-		  // This masks off the error bit of the high byte, then moves it left 8 bits and adds the low byte.
-		  // tempBuff[sensorIndex+1] == data_high, tempBuff[sensorIndex] == data_low
-		  tempData[i] = (double)(((tempBuff[i*2+1] & 0x007F) << 8) + tempBuff[i*2]);
-		  tempData[i] = (tempData[i] * tempFactor)-0.01;
-		}     
-		
-		maxSensorRead = findMax(tempData);
-		float celcius = maxSensorRead - 273.15;
-		float fahrenheit = (celcius*1.8) + 32;
-		
-		tempDisplay(celcius, sensorIndex);
-		//TODO: Display on OSD.
-		*((uint8_t*)slipBuffer + 0) = ID_TEMP;
-		*((uint8_t*)slipBuffer + 1 + 1) = celcius;
-		*((uint8_t*)slipBuffer + 1 + 2) = sensorIndex;
-		*((uint8_t*)slipBuffer + 1 + 3) = 0;
-		SlipPacketSend(3, (char*)slipBuffer, &Serial3);
-		
-		sensorIndex++;
-	}
+    //time1 = millis();
+    
+    for(int i = 0; i < sampleSize; i++)
+    {
+      i2c_start_wait(dev+I2C_WRITE);
+      i2c_write(0x07);
+      
+      // read
+      i2c_rep_start(dev+I2C_READ);
+      tempBuff[i*2] = i2c_readAck(); //Read 1 byte and then send ack, data_low
+      tempBuff[i*2+1] = i2c_readAck(); //Read 1 byte and then send ack, data_high
+      pec = i2c_readNak();
+      i2c_stop();
+    }
+    //Serial.print("Time: ");
+    //time2 = millis();
+    //Serial.println(time2-time1);
+    
+    /////// DEBUG ///////
+//    for(int i = 0; i < sampleNum; i++)
+//    {
+//       Serial.println(tempBuff[i]);
+//    }
+        
+        
+    //This converts high and low bytes together and processes temperature, MSB is a error bit and is ignored for temps
+    double tempFactor = 0.02; // 0.02 degrees per LSB (measurement resolution of the MLX90614)
+    int frac; // data past the decimal point
+    
+    for(int i = 0; i < sampleSize; i++)
+    {
+      // This masks off the error bit of the high byte, then moves it left 8 bits and adds the low byte.
+      // tempBuff[index+1] == data_high, tempBuff[index] == data_low
+      tempData[i] = (double)(((tempBuff[i*2+1] & 0x007F) << 8) + tempBuff[i*2]);
+      tempData[i] = (tempData[i] * tempFactor)-0.01;
+    }     
+    
+    maxSensorRead = findMax(tempData);
+    float celcius = maxSensorRead - 273.15;
+    float fahrenheit = (celcius*1.8) + 32;
+    //time = millis();
+    //Serial.println(time);
+    Serial.print("Celcius: ");
+    Serial.println(celcius);
+
+    //Serial.print("Fahrenheit: ");
+    //Serial.println(fahrenheit);
+    
+    Serial.print("Index: ");
+    Serial.println(index);
+    
+    tempDisplay(celcius, index);
+
+    //delay(1); // wait a second before printing again
+    
+    if (index == numSensors - 1)
+    {
+       index = 0;
+    }
+    else
+    {
+       index++; 
+    }  
+    
+     dev = devAddr[index];
+    //dev = (index == numSensors - 1)? devAddr[index = 0] : devAddr[index++];
 }
 
 void tempDisplay(int temp, int col)

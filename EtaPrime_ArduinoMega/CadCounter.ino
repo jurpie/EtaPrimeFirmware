@@ -1,10 +1,12 @@
-#define wheelRadius 203
+int cadence = 0;
+unsigned long cadArray[10] = {0};
+int cadIndex = 0;
 
 void setupCadCounter(){
 // *****************************************************************************
 // CADENCE COUNTER SETUP
 // *****************************************************************************
-  pinMode(QA, INPUT);
+/*  pinMode(QA, INPUT);
   pinMode(QB, INPUT);
   pinMode(QC, INPUT);
   pinMode(QD, INPUT);
@@ -13,16 +15,48 @@ void setupCadCounter(){
   pinMode(QG, INPUT);
   pinMode(QH, INPUT);
   pinMode(RCK, OUTPUT);
+*/
+
+  // Testing Counter Interrupt
+  pinMode(2, INPUT);
+  digitalWrite(2, HIGH);
+  attachInterrupt(0, cadISR, FALLING);
 }
 
+void cadISR(){
+    cadArray[cadIndex] = millis();
+    cadIndex++;
+    if (cadIndex == 10) cadIndex = 0;
+    //Serial.println(counterIndex);
+    return;
+}
 void loopCadCounter(){
 // *****************************************************************************
 // CADENCE COUNTER LOOP
 // *****************************************************************************	
-	*((uint8_t*)slipBuffer + 0) = ID_CADENCE;
+
+
+// Testing Counter Interrupt
+      for (int i = 0; i < 10; i++){
+        Serial.println(cadArray[i]);	
+      }
+      
+      cadence = 60000 / ((float)(cadArray[cadIndex-1] - cadArray[cadIndex-2]));
+      
+      	*((uint8_t*)slipBuffer + 0) = ID_CADENCE;
 	*((uint8_t*)slipBuffer + 1 + 1) = cadence;
 	*((uint8_t*)slipBuffer + 1 + 2) = 0;
 	SlipPacketSend(3, (char*)slipBuffer, &Serial3);
+
+      Serial.println("Cadence: ");
+      Serial.println("cadence = 60000 / ((float)(cadArray[cadIndex-1] - cadArray[cadIndex-2]))");
+      Serial.print(cadence);
+      Serial.print(" = 60000 / (");
+      Serial.print(cadArray[cadIndex]);
+      Serial.print(" - ");
+      Serial.print(cadArray[cadIndex-1]);
+      Serial.println(")");
+      
 }
 
 int readCounter(){
