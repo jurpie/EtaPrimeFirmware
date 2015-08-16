@@ -1,21 +1,14 @@
+#define CADINDEX_MAX 10
+
 int cadence = 0;
-unsigned long cadArray[10] = {0};
+unsigned long cadArray[CADINDEX_MAX] = {0};
 int cadIndex = 0;
+int cadIndex1, cadIndex2;
 
 void setupCadCounter(){
 // *****************************************************************************
 // CADENCE COUNTER SETUP
 // *****************************************************************************
-/*  pinMode(QA, INPUT);
-  pinMode(QB, INPUT);
-  pinMode(QC, INPUT);
-  pinMode(QD, INPUT);
-  pinMode(QE, INPUT);
-  pinMode(QF, INPUT);
-  pinMode(QG, INPUT);
-  pinMode(QH, INPUT);
-  pinMode(RCK, OUTPUT);
-*/
 
   // Testing Counter Interrupt
   pinMode(2, INPUT);
@@ -26,7 +19,7 @@ void setupCadCounter(){
 void cadISR(){
     cadArray[cadIndex] = millis();
     cadIndex++;
-    if (cadIndex == 10) cadIndex = 0;
+    if (cadIndex == CADINDEX_MAX) cadIndex = 0;
     //Serial.println(counterIndex);
     return;
 }
@@ -37,52 +30,44 @@ void loopCadCounter(){
 
 
 // Testing Counter Interrupt
-      for (int i = 0; i < 10; i++){
-        Serial.println(cadArray[i]);	
-      }
-      
-      cadence = 60000 / ((float)(cadArray[cadIndex-1] - cadArray[cadIndex-2]));
-      
-      	*((uint8_t*)slipBuffer + 0) = ID_CADENCE;
-	*((uint8_t*)slipBuffer + 1 + 1) = cadence;
-	*((uint8_t*)slipBuffer + 1 + 2) = 0;
-	SlipPacketSend(3, (char*)slipBuffer, &Serial3);
+		for (int i = 0; i < CADINDEX_MAX; i++){
+		Serial.println(cadArray[i]);	
+		}
 
-      Serial.println("Cadence: ");
-      Serial.println("cadence = 60000 / ((float)(cadArray[cadIndex-1] - cadArray[cadIndex-2]))");
-      Serial.print(cadence);
-      Serial.print(" = 60000 / (");
-      Serial.print(cadArray[cadIndex]);
-      Serial.print(" - ");
-      Serial.print(cadArray[cadIndex-1]);
-      Serial.println(")");
-      
-}
+		if (cadIndex == 0){
+		  cadIndex1 = CADINDEX_MAX - 1;
+		  cadIndex2 = CADINDEX_MAX - 2;
+		}
+		else if (cadIndex == 1){
+		  cadIndex1 = 0;
+		  cadIndex2 = CADINDEX_MAX - 1;
+		}
+		else {
+		  cadIndex1 = cadIndex - 1;
+		  cadIndex2 = cadIndex - 2;
+		}
+		
+		Serial.print("cadIndex = ");
+		Serial.println(cadIndex);
+		if (cadIndex1 > cadIndex2){
+		  cadence = 60000 / ((float)(cadArray[cadIndex1] - cadArray[cadIndex2]));
+		  
+		  *((uint8_t*)slipBuffer + 0) = ID_POWER;
+		  *((uint16_t*)(slipBuffer + 1 + 0)) = 0;
+		  *((uint8_t*)slipBuffer + 1 + 2) = cadence;
+		  *((uint8_t*)slipBuffer + 1 + 3) = 0;
+		  SlipPacketSend(4, (char*)slipBuffer, &Serial3);
 
-int readCounter(){
-	union{
-	struct bin_t { 
-		uint8_t b0 : 1, b1 : 1, b2 : 1, b3 : 1, b4 : 1, b5 : 1, b6 : 1, b7 : 1; 
-		} bin;
-	uint8_t count;    
-	};
-	// Write to register clock
-	digitalWrite(RCK, HIGH);
-
-	// Read from data pins
-	bin.b0 = digitalRead(QA);
-	bin.b1 = digitalRead(QB);  
-	bin.b2 = digitalRead(QC);  
-	bin.b3 = digitalRead(QD);  
-	bin.b4 = digitalRead(QE);  
-	bin.b5 = digitalRead(QF);  
-	bin.b6 = digitalRead(QG);  
-	bin.b7 = digitalRead(QH);  
-
-	//Serial.println(count);
-	digitalWrite(RCK, LOW);	
-
-	int returnCount = (int)count;
-
-	return returnCount;
+		  Serial.println("Cadence: ");
+		  Serial.println("cadence = 60000 / ((float)(cadArray[cadIndex-1] - cadArray[cadIndex-2]))");
+		  Serial.print(cadence);
+		  Serial.print(" = 60000 / (");
+		  Serial.print(cadArray[cadIndex1]);
+		  Serial.print(" - ");
+		  Serial.print(cadArray[cadIndex2]);
+		  Serial.println(")");
+		}
+		else{
+		  Serial.println("Timing overflow!");
+		}
 }
