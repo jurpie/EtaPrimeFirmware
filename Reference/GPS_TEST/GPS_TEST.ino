@@ -14,6 +14,10 @@ Adafruit_GPS GPS(&mySerial);
 boolean usingInterrupt = false;
 void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
 
+// Testing Counter Interrupt
+int counterArray[10] = {0};
+int counterIndex = 0;
+
 void setup()  
 {
   // connect at 115200 so we can read the GPS fast enough and echo without dropping chars
@@ -36,9 +40,23 @@ void setup()
   // loop code a heck of a lot easier!
   useInterrupt(true);
 
+  // Testing Counter Interrupt
+  pinMode(2, INPUT);
+  digitalWrite(2, HIGH);
+  attachInterrupt(0, counterISR, FALLING);
+  
   delay(1000);
 
 }
+
+void counterISR(){
+    counterArray[counterIndex] = millis();
+    counterIndex++;
+    if (counterIndex == 10) counterIndex = 0;
+    //Serial.println(counterIndex);
+    return;
+}
+
 
 void useInterrupt(boolean v) {
   if (v) {
@@ -102,6 +120,10 @@ void loop() {
       Serial.print("Altitude: "); Serial.println(GPS.altitude);
       Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
     }
-	
+    
+// Testing Counter Interrupt
+      for (int i = 0; i < 10; i++){
+        Serial.println(counterArray[i]);	
+      }
 	delay(1000);
 }
