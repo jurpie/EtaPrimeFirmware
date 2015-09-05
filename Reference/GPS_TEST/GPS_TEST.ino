@@ -4,6 +4,7 @@
 HardwareSerial mySerial = Serial2;
 
 Adafruit_GPS GPS(&mySerial);
+char DateTime[32] = {0};
 
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences. 
@@ -121,9 +122,10 @@ void loop() {
       Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
     }
     
-// Testing Counter Interrupt
-      for (int i = 0; i < 10; i++){
-        Serial.println(counterArray[i]);	
-      }
-	delay(1000);
+	  // Clear DateTime buffer;
+  DateTime[0] = '\0';
+  // Get date + time from GPS.
+  sprintf(DateTime, "20%d-%d-%d %d:%d:%d", GPS.year, GPS.month, GPS.day, GPS.hour, GPS.minute, GPS.seconds);
+    Serial.println(DateTime);
+        delay(1000);
 }

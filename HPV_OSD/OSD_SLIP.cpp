@@ -31,7 +31,7 @@ void OSD_SlipParse(char *slipBuffer) {
 
   switch(MsgID) {
   case ID_CADENCE:
-    cadence = (*((uint8_t*) slipBuffer+3)*1000.0)/ (1.0* (*((uint16_t*)((uint8_t*)slipBuffer+1))));
+    cadence = *((uint8_t*) slipBuffer+2);
     break;
   case ID_HEART:
     heartRate = *((uint8_t*) (slipBuffer+1));

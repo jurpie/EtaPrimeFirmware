@@ -4,7 +4,7 @@
 
 int devAddr [] = { 0x01<<1, 0x02<<1, 0x03<<1, 0x04<<1 }; 
 
-const int sampleSize = 8;
+const int sampleSize = 1;
 // Consider data_low and data_high
 const int buffSize = sampleSize*2 - 1;
 const int numSensors = 4;  // Number of sensors
@@ -41,7 +41,7 @@ void loopTempSensors(){
     //Serial.println(dev>>1);
     int maxSensorRead;   // max temp among all sample reads for a particular sensor at a time
     int tempBuff[buffSize] = {0};
-    double tempData[sampleSize-1] = {0x0000}; // where samples are temporary stored
+    double tempData[sampleSize] = {0x0000}; // where samples are temporary stored
     int pec = 0;
 
     //time1 = millis();
@@ -110,6 +110,12 @@ void loopTempSensors(){
     
      dev = devAddr[index];
     //dev = (index == numSensors - 1)? devAddr[index = 0] : devAddr[index++];
+    
+    	  *((uint8_t*)slipBuffer + 0) = ID_TEMPERATURE;
+      *((int16_t*)(slipBuffer + 1 + 0)) = celcius;
+      *((uint8_t*)slipBuffer + 1 + 2) = fahrenheit;
+      *((uint8_t*)slipBuffer + 1 + 3) = 0;
+      SlipPacketSend(4, (char*)slipBuffer, &Serial3);
 }
 
 void tempDisplay(int temp, int col)
@@ -131,7 +137,7 @@ void tempDisplay(int temp, int col)
        matrix.drawLine(col+1, 0, col+1, 7 - height, LED_OFF);
     }
     matrix.writeDisplay();
-    
+
 }
 
 double findMax(double *data)

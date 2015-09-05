@@ -36,6 +36,8 @@
 #define SCK 52
 #define SS 53
 
+#define TOGGLE_PIN 49
+
 // Message IDs
 #define ID_CADENCE		1
 #define ID_DISTANCE		2
@@ -73,11 +75,13 @@ char slipBuffer[N_SLIP]; //SLIP.h
 void setup() {
 
 	Serial.begin(9600); // COM Port
+
 	setupOSD();
 	setupGPS();
 	setupTempSensors();
 	setupCadCounter();
-	//setupSD();
+	setupTargetSpeed();
+	setupSD();
 }
 
 void loop() {
@@ -85,8 +89,10 @@ void loop() {
 	loopGPS();
 	loopTempSensors();
 	loopCadCounter();
-	//loopSD();
-        delay(1000);
+	loopTargetSpeed();
+	loopSD();
+        //delay(1000);
+        Serial.println("=====================");
 }
 
 
@@ -97,7 +103,8 @@ int32_t average(int32_t *beg, const int len) {
   float total = 0;
 
   for (int i = 0; i < len; ++i) {
-    total += *(beg + i) / len;
+
+  total += *(beg + i) / len;
   }
   
   return (int32_t) (total + 0.5f);

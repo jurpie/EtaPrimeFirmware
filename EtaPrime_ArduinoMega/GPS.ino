@@ -14,14 +14,14 @@ Adafruit_GPS GPS(&mySerial);
 boolean usingInterrupt = false;
 void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
 
-uint32_t targetSpeed, speed;
-int32_t displacement;
 int32_t lat, lon, alt;
 int32_t LattitudeStart = 436585166, LongitudeStart = -793934912, AltitudeStart = 117689;
 int32_t LattitudeFinish, LongitudeFinish, AltitudeFinish;
 int32_t LattitudePrev, LongitudePrev, AltitudePrev;
 int8_t startSet = 0;
 uint32_t GPS_totalDistance = 0;
+
+char DateTime[32] = {0};
 
 void setupGPS(){
 // *****************************************************************************
@@ -73,7 +73,7 @@ void loopGPS(){
 // *****************************************************************************
 // GPS LOOP
 // *****************************************************************************
-        Serial.println("Inside GPS loop");
+        //Serial.println("Inside GPS loop");
 	// if a sentence is received, we can check the checksum, parse it...
 	if (GPS.newNMEAreceived()) {
 		// a tricky thing here is if we print the NMEA sentence, or data
@@ -101,58 +101,15 @@ void loopGPS(){
 		static int32_t altitude[numTerms];
 		static int index = 0;
 
-		if (startSet == 0) {
-		GPS_setStart();
-		Serial.println(startSet);
-		Serial.println("GPS start set!");
 
-		lat = GPS.latitude;
-		lon = GPS.longitude;
-		alt = GPS.altitude;
-		
-		// Calculate speed
-		speed = GPS.speed * 1.852;
-		// Send Speed through SLIP
-		
-		*((uint8_t*)slipBuffer + 0) = ID_SPEED;
-		*((int32_t*)(slipBuffer + 1 + 0)) = speed;
-		*((uint8_t*)slipBuffer + 1 + 4) = 0;
-		SlipPacketSend(6, (char*)slipBuffer, &Serial3);
-		}
-
-		
-		//Send Distance through SLIP
-		displacement = GPS_getDistance(LattitudeStart, LongitudeStart, AltitudeStart, lat, lon, alt);
-		uint32_t currDistance = GPS_getDistance(LattitudePrev, LongitudePrev, AltitudePrev, lat, lon, alt);
-
-		if (currDistance >= 0) {
-		GPS_totalDistance += currDistance;
-
-		LattitudePrev = lat;
-		LongitudePrev = lon;
-		AltitudePrev = alt;
-		}
-                
-                Serial.print("GPS Data: ");
-                Serial.print("Longitude - ");
-                Serial.print(lon);
-                Serial.print(" Latitude - ");
-                Serial.print(lat);
-                Serial.print(" Altitude - ");
-                Serial.println(alt);
-                
-                *((uint8_t*)slipBuffer + 0) = ID_DISTANCE;
-		*((uint32_t*)(slipBuffer + 1 + 0)) = GPS_totalDistance;
-		*((uint8_t*)slipBuffer + 1 + 4) = 0;
-		SlipPacketSend(6, (char*)slipBuffer, &Serial3);
-		
-		//Send Displacement through SLIP
-		*((uint8_t*)slipBuffer + 0) = ID_DISPLACEMENT;
-		*((int32_t*)(slipBuffer + 1 + 0)) = displacement;
-		*((uint8_t*)slipBuffer + 1 + 4) = 0;
-		SlipPacketSend(6, (char*)slipBuffer, &Serial3);
-
-                
+            
+		Serial.print("GPS Data: ");
+		Serial.print("Longitude - ");
+		Serial.print(lon);
+		Serial.print(" Latitude - ");
+		Serial.print(lat);
+		Serial.print(" Altitude - ");
+		Serial.println(alt);                
 	}
 }
 
@@ -229,4 +186,12 @@ double deg2rad(int32_t deg) {
 }
 double rad2deg(int32_t rad) {
   return ((rad * 180.0) / pi);
+}
+
+char *readDateTime(){
+  // Clear DateTime buffer;
+  DateTime[0] = '\0';
+  // Get date + time from GPS.
+  sprintf(DateTime, "%d-%d-%d %d:%d:%d", GPS.year, GPS.month, GPS.day, GPS.hour, GPS.minute, GPS.seconds);
+  return DateTime;
 }
