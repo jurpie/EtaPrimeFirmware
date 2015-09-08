@@ -39,6 +39,8 @@ void loopTargetSpeed(){
 	Serial.println(targetSpeed);
 	Serial.print("Distance: ");
 	Serial.println(GPS_totalDistance);
+        Serial.print("Displacement: ");
+	Serial.println(displacement);
 	}
 	
 	//Send profileNum through SLIP
@@ -66,8 +68,14 @@ void loopTargetSpeed(){
 	SlipPacketSend(6, (char*)slipBuffer, &Serial3);
 
 	//Send Distance through SLIP
-	*((uint8_t*)slipBuffer + 0) = ID_DISTANCE;
-	*((uint32_t*)(slipBuffer + 1 + 0)) = GPS_totalDistance;
+//	*((uint8_t*)slipBuffer + 0) = ID_DISTANCE;
+//	*((uint32_t*)(slipBuffer + 1 + 0)) = GPS_totalDistance;
+//	*((uint8_t*)slipBuffer + 1 + 4) = 0;
+//	SlipPacketSend(6, (char*)slipBuffer, &Serial3);
+
+	//Send Displacement through SLIP
+	*((uint8_t*)slipBuffer + 0) = ID_DISPLACEMENT;
+	*((uint32_t*)(slipBuffer + 1 + 0)) = displacement;
 	*((uint8_t*)slipBuffer + 1 + 4) = 0;
 	SlipPacketSend(6, (char*)slipBuffer, &Serial3);
 }

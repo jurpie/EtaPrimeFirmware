@@ -78,8 +78,8 @@ void setup() {
 
 	setupOSD();
 	setupGPS();
-	setupTempSensors();
-	setupCadCounter();
+//	setupTempSensors();
+//	setupCadCounter();
 	setupTargetSpeed();
 	setupSD();
 }
@@ -87,11 +87,10 @@ void setup() {
 void loop() {
 	loopOSD();
 	loopGPS();
-	loopTempSensors();
-	loopCadCounter();
+//	loopTempSensors();
+//	loopCadCounter();
 	loopTargetSpeed();
 	loopSD();
-        //delay(1000);
         Serial.println("=====================");
 }
 

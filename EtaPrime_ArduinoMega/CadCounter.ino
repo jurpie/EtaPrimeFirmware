@@ -11,16 +11,20 @@ void setupCadCounter(){
 // *****************************************************************************
 
   // Testing Counter Interrupt
-  pinMode(2, INPUT);
-  digitalWrite(2, HIGH);
-  attachInterrupt(0, cadISR, FALLING);
+  Serial.print("Setup cad interrupt...");
+  pinMode(3, INPUT);
+  digitalWrite(3, HIGH);
+  attachInterrupt(1, cadISR, FALLING);
 }
 
 void cadISR(){
     cadArray[cadIndex] = millis();
+//    Serial.print("Inside cad interrupt...");
+//    Serial.println(cadArray[cadIndex]);
     cadIndex++;
     if (cadIndex == CADINDEX_MAX) cadIndex = 0;
     //Serial.println(counterIndex);
+//    Serial.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
     return;
 }
 void loopCadCounter(){
@@ -32,7 +36,7 @@ void loopCadCounter(){
 // Testing Counter Interrupt
 		
 		for (int i = 0; i < CADINDEX_MAX; i++){
-		Serial.println(cadArray[i]);	
+		  Serial.println(cadArray[i]);	
 		}
 
 		if (cadIndex == 0){
@@ -48,8 +52,8 @@ void loopCadCounter(){
 		  cad2 = cadArray[cadIndex - 2];
 		}
 		
-		//Serial.print("cadIndex = ");
-		//Serial.println(cadIndex);
+		Serial.print("cadIndex = ");
+		Serial.println(cadIndex);
 		if (cad1 > cad2){
 			
 			unsigned long curTime = millis();

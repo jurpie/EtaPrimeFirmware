@@ -100,8 +100,11 @@ void loopGPS(){
 		static int32_t longitude[numTerms];
 		static int32_t altitude[numTerms];
 		static int index = 0;
-
-
+                
+                lat = GPS.latitude;
+                lon = GPS.longitude;
+                alt = GPS.altitude;
+                
             
 		Serial.print("GPS Data: ");
 		Serial.print("Longitude - ");

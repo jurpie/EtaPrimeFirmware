@@ -3,6 +3,7 @@
 // *****************************************************************************
 
 int devAddr [] = { 0x01<<1, 0x02<<1, 0x03<<1, 0x04<<1 }; 
+//int devAddr [] = { 0x02<<1, 0x03<<1, 0x04<<1 }; 
 
 const int sampleSize = 1;
 // Consider data_low and data_high
@@ -20,25 +21,25 @@ Adafruit_BicolorMatrix matrix = Adafruit_BicolorMatrix();
 
 void setupTempSensors(){
    Serial.begin(9600);
-   Serial.println("Setup...");   
+   Serial.println("Setup Temp Sensors...");   
         
    i2c_init(); //Initialise the i2c bus
    PORTC = (1 << PORTC4) | (1 << PORTC5);//enable pullups
 
-        matrix.begin(0x70);  // pass in the address
-        
-        //matrix.clear(); 
-        matrix.fillRect(0, 0, 8, 2, LED_RED);    // Upper section
-        matrix.fillRect(0, 2, 8, 3, LED_YELLOW); // Mid
-        matrix.fillRect(0, 5, 8, 3, LED_GREEN);  // Lower section
-        matrix.writeDisplay();
+//        matrix.begin(0x70);  // pass in the address
+//        
+//        //matrix.clear(); 
+//        matrix.fillRect(0, 0, 8, 2, LED_RED);    // Upper section
+//        matrix.fillRect(0, 2, 8, 3, LED_YELLOW); // Mid
+//        matrix.fillRect(0, 5, 8, 3, LED_GREEN);  // Lower section
+//        matrix.writeDisplay();
 }
 
 void loopTempSensors(){
     
-    //Serial.println();
-    //Serial.print("Device Address: ");
-    //Serial.println(dev>>1);
+//    Serial.println("loop Temp Sensors");
+//    Serial.print("Device Address: ");
+    Serial.println(dev>>1);
     int maxSensorRead;   // max temp among all sample reads for a particular sensor at a time
     int tempBuff[buffSize] = {0};
     double tempData[sampleSize] = {0x0000}; // where samples are temporary stored
@@ -50,7 +51,6 @@ void loopTempSensors(){
     {
       i2c_start_wait(dev+I2C_WRITE);
       i2c_write(0x07);
-      
       // read
       i2c_rep_start(dev+I2C_READ);
       tempBuff[i*2] = i2c_readAck(); //Read 1 byte and then send ack, data_low
@@ -95,7 +95,7 @@ void loopTempSensors(){
     Serial.print("Index: ");
     Serial.println(index);
     
-    tempDisplay(celcius, index);
+//    tempDisplay(celcius, index);
 
     //delay(1); // wait a second before printing again
     
