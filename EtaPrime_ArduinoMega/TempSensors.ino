@@ -2,40 +2,72 @@
 // TEMPERATURE SENSOR VARIABLES
 // *****************************************************************************
 
-int devAddr [] = { 0x01<<1, 0x02<<1, 0x03<<1, 0x04<<1 }; 
-
+const int devAddr [] = { 0x01<<1, 0x02<<1, 0x03<<1, 0x04<<1 }; 
 const int sampleSize = 1;
 // Consider data_low and data_high
 const int buffSize = sampleSize*2 - 1;
 const int numSensors = 4;  // Number of sensors
 
-
+int dev_found [numSensors] = {0};
 int index = 0;
 int dev = devAddr[index];
 int ledAddr = 0x70;
 int maxTemp = 40;
 int minTemp = 20;
 
-Adafruit_BicolorMatrix matrix = Adafruit_BicolorMatrix();
+// Adafruit_BicolorMatrix matrix = Adafruit_BicolorMatrix();
 
 void setupTempSensors(){
-   Serial.begin(9600);
-   Serial.println("Setup...");   
+   Serial.println("Starting Temperature Sensor Setup.");   
         
    i2c_init(); //Initialise the i2c bus
    PORTC = (1 << PORTC4) | (1 << PORTC5);//enable pullups
 
-        matrix.begin(0x70);  // pass in the address
-        
+/*
+        matrix.begin(0x70);  // pass in the address        
         //matrix.clear(); 
         matrix.fillRect(0, 0, 8, 2, LED_RED);    // Upper section
         matrix.fillRect(0, 2, 8, 3, LED_YELLOW); // Mid
         matrix.fillRect(0, 5, 8, 3, LED_GREEN);  // Lower section
         matrix.writeDisplay();
+*/
+
+   // Test devices
+   for (int i = 0; i <= numSensors; i++){
+    dev = devAddr[i];
+    if(i2c_start(dev+I2C_WRITE) == 1){
+      Serial.print("Temperature sensor ");
+      Serial.print(i);
+      Serial.println(" not found.");
+      continue;
+    }
+    else{
+      dev_found[i] = 1;
+    }
+   }
+   Serial.println("Temperature Sensor Setup Complete.");
 }
 
 void loopTempSensors(){
+    Serial.println("Starting Temperature Sensor Loop.");
+    Serial.print("Index: ");
+    Serial.println(index);
     
+    if (index == numSensors - 1)
+    {
+       index = 0;
+    }
+    else
+    {
+       index++; 
+    }
+    
+    if (!dev_found[index-1]){
+      Serial.println("Skipping, because device not found.");
+      return;
+    }
+    
+    dev = devAddr[index];
     //Serial.println();
     //Serial.print("Device Address: ");
     //Serial.println(dev>>1);
@@ -63,7 +95,7 @@ void loopTempSensors(){
     //Serial.println(time2-time1);
     
     /////// DEBUG ///////
-//    for(int i = 0; i < sampleNum; i++)
+//    fofr(int i = 0; i < sampleNum; i++)
 //    {
 //       Serial.println(tempBuff[i]);
 //    }
@@ -92,32 +124,21 @@ void loopTempSensors(){
     //Serial.print("Fahrenheit: ");
     //Serial.println(fahrenheit);
     
-    Serial.print("Index: ");
-    Serial.println(index);
-    
-    tempDisplay(celcius, index);
+    // tempDisplay(celcius, index);
 
     //delay(1); // wait a second before printing again
     
-    if (index == numSensors - 1)
-    {
-       index = 0;
-    }
-    else
-    {
-       index++; 
-    }  
-    
-     dev = devAddr[index];
+
     //dev = (index == numSensors - 1)? devAddr[index = 0] : devAddr[index++];
     
-    	  *((uint8_t*)slipBuffer + 0) = ID_TEMPERATURE;
-      *((int16_t*)(slipBuffer + 1 + 0)) = celcius;
-      *((uint8_t*)slipBuffer + 1 + 2) = fahrenheit;
-      *((uint8_t*)slipBuffer + 1 + 3) = 0;
-      SlipPacketSend(4, (char*)slipBuffer, &Serial3);
+    *((uint8_t*)slipBuffer + 0) = ID_TEMPERATURE;
+    *((int16_t*)(slipBuffer + 1 + 0)) = celcius;
+    *((uint8_t*)slipBuffer + 1 + 2) = fahrenheit;
+    *((uint8_t*)slipBuffer + 1 + 3) = 0;
+    SlipPacketSend(4, (char*)slipBuffer, &Serial3);
 }
 
+/*
 void tempDisplay(int temp, int col)
 {
     // Figure out how tall the column should be
@@ -137,8 +158,8 @@ void tempDisplay(int temp, int col)
        matrix.drawLine(col+1, 0, col+1, 7 - height, LED_OFF);
     }
     matrix.writeDisplay();
-
 }
+*/
 
 double findMax(double *data)
 {

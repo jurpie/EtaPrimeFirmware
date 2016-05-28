@@ -81,7 +81,7 @@ void setup() {
 	setupTempSensors();
 	setupCadCounter();
 	setupTargetSpeed();
-	setupSD();
+	//setupSD();
 }
 
 void loop() {
@@ -90,7 +90,7 @@ void loop() {
 	loopTempSensors();
 	loopCadCounter();
 	loopTargetSpeed();
-	loopSD();
+	//loopSD();
         //delay(1000);
         Serial.println("=====================");
 }

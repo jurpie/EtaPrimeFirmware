@@ -19,7 +19,7 @@ void setupTargetSpeed(){
 }
 
 void loopTargetSpeed(){
-	
+    Serial.println("Starting Speed Loop.");	
 	toggle();
 	
 	displacement = GPS_getDistance(LattitudeStart, LongitudeStart, AltitudeStart, lat, lon, alt) / 1000.0;
