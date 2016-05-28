@@ -40,7 +40,7 @@ void loopCadCounter(){
     if ((curTime - cad1) > 3000) 
       cadence = 0; //Cadence = 0 if pedalling stops for 3 seconds.
     else cadence = (int)(60000.0 / ((float)(cad1 - cad2)));
-			
+
     Serial.println("Cadence: ");
     Serial.print(cadence);
     Serial.print(" = 60000 / (");
@@ -52,5 +52,11 @@ void loopCadCounter(){
   else{
     Serial.println("Timing overflow!");
   }
+  
+   *((uint8_t*)slipBuffer + 0) = ID_POWER;
+   *((uint16_t*)(slipBuffer + 1 + 0)) = 0;
+   *((uint8_t*)slipBuffer + 1 + 2) = cadence;
+   *((uint8_t*)slipBuffer + 1 + 3) = 0;
+   SlipPacketSend(4, (char*)slipBuffer, &Serial3);
 }
 

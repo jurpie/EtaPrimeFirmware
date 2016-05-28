@@ -27,7 +27,7 @@ void setupGPS(){
 // *****************************************************************************
 // GPS SETUP
 // *****************************************************************************
-        Serial.println("Starting GPS Setup.");
+        Serial.println("Setting up GPS...");
         // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
         GPS.begin(9600);
         
@@ -43,8 +43,6 @@ void setupGPS(){
         // every 1 millisecond, and read data from the GPS for you. that makes the
         // loop code a heck of a lot easier!
         useInterrupt(true);
-        Serial.println("GPS Setup Complete.");
-
 }
 
 void useInterrupt(boolean v) {
@@ -75,8 +73,6 @@ void loopGPS(){
 // *****************************************************************************
 // GPS LOOP
 // *****************************************************************************
-  Serial.println("Starting Cadence Counter Loop.");
-
         //Serial.println("Inside GPS loop");
 	// if a sentence is received, we can check the checksum, parse it...
 	if (GPS.newNMEAreceived()) {
@@ -104,8 +100,11 @@ void loopGPS(){
 		static int32_t longitude[numTerms];
 		static int32_t altitude[numTerms];
 		static int index = 0;
-
-
+                
+                lat = GPS.latitude;
+                lon = GPS.longitude;
+                alt = GPS.altitude;
+                
             
 		Serial.print("GPS Data: ");
 		Serial.print("Longitude - ");
